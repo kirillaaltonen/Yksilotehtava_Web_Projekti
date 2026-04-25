@@ -81,3 +81,11 @@ button:disabled {
   margin-top: 0;
   color: #ff5000;
 }
+input,
+select {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  margin-bottom: 10px;
+}

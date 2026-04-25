@@ -16,10 +16,35 @@
 
 <main>
   <section>
+    <h2>Hakutoiminnot</h2>
+
+    <input id="searchInput" type="search" placeholder="Hae ravintolaa...">
+
+    <select id="cityFilter">
+      <option value="all">Kaikki kaupungit</option>
+    </select>
+
+    <select id="providerFilter">
+      <option value="all">Kaikki tarjoajat</option>
+    </select>
+  </section>
+
+  <section>
     <h2>Ravintolat</h2>
     <p id="message">Ladataan ravintoloita...</p>
     <div id="restaurantList"></div>
   </section>
+
+  <section>
+    <h2>Ruokalista</h2>
+    <p id="selectedRestaurantName">Valitse ravintola</p>
+
+    <button id="dailyButton" disabled>Päivän menu</button>
+    <button id="weeklyButton" disabled>Viikon menu</button>
+
+    <div id="menuContent"></div>
+  </section>
+</main>
 
   <section>
     <h2>Ruokalista</h2>

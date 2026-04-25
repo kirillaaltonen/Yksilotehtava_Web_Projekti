@@ -9,6 +9,10 @@ const dailyButton = document.querySelector('#dailyButton');
 const weeklyButton = document.querySelector('#weeklyButton');
 const menuContent = document.querySelector('#menuContent');
 
+const searchInput = document.querySelector('#searchInput');
+const cityFilter = document.querySelector('#cityFilter');
+const providerFilter = document.querySelector('#providerFilter');
+
 let restaurants = [];
 let selectedRestaurant = null;
 
@@ -21,7 +25,10 @@ async function fetchRestaurants() {
         }
 
         restaurants = await response.json();
+
+        createFilters(restaurants);
         renderRestaurants(restaurants);
+
         message.textContent = '';
     } catch (error) {
         console.error(error);
@@ -29,8 +36,56 @@ async function fetchRestaurants() {
     }
 }
 
+function createFilters(restaurantsData) {
+    const cities = [...new Set(restaurantsData.map((restaurant) => restaurant.city).filter(Boolean))];
+    const providers = [...new Set(restaurantsData.map((restaurant) => restaurant.company).filter(Boolean))];
+
+    cities.sort();
+    providers.sort();
+
+    cities.forEach((city) => {
+        const option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        cityFilter.appendChild(option);
+    });
+
+    providers.forEach((provider) => {
+        const option = document.createElement('option');
+        option.value = provider;
+        option.textContent = provider;
+        providerFilter.appendChild(option);
+    });
+}
+
+function filterRestaurants() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedCity = cityFilter.value;
+    const selectedProvider = providerFilter.value;
+
+    const filteredRestaurants = restaurants.filter((restaurant) => {
+        const matchesSearch =
+            restaurant.name.toLowerCase().includes(searchTerm) ||
+            (restaurant.address || '').toLowerCase().includes(searchTerm) ||
+            (restaurant.city || '').toLowerCase().includes(searchTerm) ||
+            (restaurant.company || '').toLowerCase().includes(searchTerm);
+
+        const matchesCity = selectedCity === 'all' || restaurant.city === selectedCity;
+        const matchesProvider = selectedProvider === 'all' || restaurant.company === selectedProvider;
+
+        return matchesSearch && matchesCity && matchesProvider;
+    });
+
+    renderRestaurants(filteredRestaurants);
+}
+
 function renderRestaurants(restaurantsToRender) {
     restaurantList.innerHTML = '';
+
+    if (restaurantsToRender.length === 0) {
+        restaurantList.innerHTML = '<p>Ravintoloita ei löytynyt.</p>';
+        return;
+    }
 
     restaurantsToRender.forEach((restaurant) => {
         const card = document.createElement('article');
@@ -141,6 +196,10 @@ function renderWeeklyMenu(weeklyMenu) {
         menuContent.appendChild(dayElement);
     });
 }
+
+searchInput.addEventListener('input', filterRestaurants);
+cityFilter.addEventListener('change', filterRestaurants);
+providerFilter.addEventListener('change', filterRestaurants);
 
 dailyButton.addEventListener('click', () => {
     if (selectedRestaurant) {
