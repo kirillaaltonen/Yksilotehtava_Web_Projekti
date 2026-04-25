@@ -6,6 +6,8 @@
   <title>Opiskelijaravintolat</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/app.js" defer></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 <body>
 
@@ -34,7 +36,10 @@
     <p id="message">Ladataan ravintoloita...</p>
     <div id="restaurantList"></div>
   </section>
-
+  <section>
+    <h2>Kartta</h2>
+    <div id="map"></div>
+  </section>
   <section>
     <h2>Ruokalista</h2>
     <p id="selectedRestaurantName">Valitse ravintola</p>

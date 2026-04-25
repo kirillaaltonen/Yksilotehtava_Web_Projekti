@@ -16,6 +16,17 @@ const providerFilter = document.querySelector('#providerFilter');
 let restaurants = [];
 let selectedRestaurant = null;
 
+let map;
+let markers = [];
+
+function initMap() {
+    map = L.map('map').setView([60.1699, 24.9384], 11);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+}
+
 async function fetchRestaurants() {
     try {
         const response = await fetch(`${API_URL}/restaurants`);
@@ -28,6 +39,7 @@ async function fetchRestaurants() {
 
         createFilters(restaurants);
         renderRestaurants(restaurants);
+        updateMapMarkers(restaurants);
 
         message.textContent = '';
     } catch (error) {
@@ -77,6 +89,7 @@ function filterRestaurants() {
     });
 
     renderRestaurants(filteredRestaurants);
+    updateMapMarkers(filteredRestaurants);
 }
 
 function renderRestaurants(restaurantsToRender) {
@@ -99,14 +112,39 @@ function renderRestaurants(restaurantsToRender) {
     `;
 
         card.addEventListener('click', () => {
-            selectedRestaurant = restaurant;
-            selectedRestaurantName.textContent = restaurant.name;
-            dailyButton.disabled = false;
-            weeklyButton.disabled = false;
-            fetchDailyMenu(restaurant._id);
+            selectRestaurant(restaurant);
         });
 
         restaurantList.appendChild(card);
+    });
+}
+
+function selectRestaurant(restaurant) {
+    selectedRestaurant = restaurant;
+    selectedRestaurantName.textContent = restaurant.name;
+    dailyButton.disabled = false;
+    weeklyButton.disabled = false;
+    fetchDailyMenu(restaurant._id);
+}
+
+function updateMapMarkers(restaurantsToShow) {
+    markers.forEach((marker) => marker.remove());
+    markers = [];
+
+    restaurantsToShow.forEach((restaurant) => {
+        if (!restaurant.location?.coordinates) return;
+
+        const [longitude, latitude] = restaurant.location.coordinates;
+
+        const marker = L.marker([latitude, longitude])
+            .addTo(map)
+            .bindPopup(`<strong>${restaurant.name}</strong><br>${restaurant.address || ''}`);
+
+        marker.on('click', () => {
+            selectRestaurant(restaurant);
+        });
+
+        markers.push(marker);
     });
 }
 
@@ -213,4 +251,5 @@ weeklyButton.addEventListener('click', () => {
     }
 });
 
+initMap();
 fetchRestaurants();
