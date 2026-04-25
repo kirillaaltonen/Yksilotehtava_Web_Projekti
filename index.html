@@ -4,18 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Opiskelijaravintolat</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
 </head>
 <body>
 
 <header>
   <h1>Opiskelijaravintolat</h1>
+  <p>Suomen opiskelijaravintolat ja ruokalistat</p>
 </header>
 
 <main>
-  <p>Sovellus latautuu...</p>
+  <section>
+    <h2>Ravintolat</h2>
+    <p id="message">Ladataan ravintoloita...</p>
+    <div id="restaurantList"></div>
+  </section>
 </main>
 
-<script src="app.js"></script>
 </body>
 </html>
