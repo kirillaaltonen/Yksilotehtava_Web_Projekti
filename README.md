@@ -35,7 +35,14 @@ GET /restaurants/weekly/{id}/fi
 Open `index.html` in a browser, or use VS Code Live Server / any local HTTP server.
 
 > Note: geolocation requires HTTPS or localhost.
+> 
+## Live Demo
 
+The application is available online via Netlify:
+
+https://YOUR-LINK.netlify.app
+
+> Note: The REST API may require Metropolia network (campus or VPN). If unavailable, the app may not display real-time data.
 ## Author
 
 Student project – Web Application Development, Metropolia UAS.
