@@ -6,6 +6,7 @@ const restaurantList = document.querySelector('#restaurantList');
 const message = document.querySelector('#message');
 const selectedRestaurantName = document.querySelector('#selectedRestaurantName');
 const dailyButton = document.querySelector('#dailyButton');
+const weeklyButton = document.querySelector('#weeklyButton');
 const menuContent = document.querySelector('#menuContent');
 
 let restaurants = [];
@@ -46,6 +47,7 @@ function renderRestaurants(restaurantsToRender) {
             selectedRestaurant = restaurant;
             selectedRestaurantName.textContent = restaurant.name;
             dailyButton.disabled = false;
+            weeklyButton.disabled = false;
             fetchDailyMenu(restaurant._id);
         });
 
@@ -93,9 +95,62 @@ function renderDailyMenu(menu) {
     });
 }
 
+async function fetchWeeklyMenu(restaurantId) {
+    menuContent.innerHTML = '<p>Ladataan viikon ruokalistaa...</p>';
+
+    try {
+        const response = await fetch(`${API_URL}/restaurants/weekly/${restaurantId}/fi`);
+
+        if (!response.ok) {
+            throw new Error('Viikon ruokalistan lataaminen epäonnistui');
+        }
+
+        const weeklyMenu = await response.json();
+        renderWeeklyMenu(weeklyMenu);
+    } catch (error) {
+        console.error(error);
+        menuContent.innerHTML = '<p>Viikon ruokalistaa ei voitu ladata.</p>';
+    }
+}
+
+function renderWeeklyMenu(weeklyMenu) {
+    menuContent.innerHTML = '';
+
+    if (!weeklyMenu.days || weeklyMenu.days.length === 0) {
+        menuContent.innerHTML = '<p>Viikon ruokalistaa ei ole saatavilla.</p>';
+        return;
+    }
+
+    weeklyMenu.days.forEach((day) => {
+        const dayElement = document.createElement('section');
+        dayElement.className = 'menu-day';
+
+        const coursesHtml = day.courses.map((course) => `
+      <div class="meal">
+        <h3>${course.name || 'Ei nimeä'}</h3>
+        <p>${course.price || ''}</p>
+        <p>${course.diets || ''}</p>
+      </div>
+    `).join('');
+
+        dayElement.innerHTML = `
+      <h3>${day.date}</h3>
+      ${coursesHtml}
+    `;
+
+        menuContent.appendChild(dayElement);
+    });
+}
+
 dailyButton.addEventListener('click', () => {
     if (selectedRestaurant) {
         fetchDailyMenu(selectedRestaurant._id);
+    }
+});
+
+weeklyButton.addEventListener('click', () => {
+    if (selectedRestaurant) {
+        fetchWeeklyMenu(selectedRestaurant._id);
     }
 });
 
