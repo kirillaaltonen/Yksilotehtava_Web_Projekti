@@ -40,7 +40,7 @@ Open `index.html` in a browser, or use VS Code Live Server / any local HTTP serv
 
 The application is available online via Netlify:
 
-https://YOUR-LINK.netlify.app
+amazing-lollipop-bb6763.netlify.app
 
 > Note: The REST API may require Metropolia network (campus or VPN). If unavailable, the app may not display real-time data.
 ## Author
