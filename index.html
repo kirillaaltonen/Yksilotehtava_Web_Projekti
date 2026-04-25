@@ -3,63 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opiskelijaravintolat</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/app.js" defer></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>Opiskelijaravintolat – Metropolia</title>
+  <link rel="stylesheet" href="Css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="Js/app.js" defer></script>
 </head>
 <body>
 
-<header>
-  <h1>Opiskelijaravintolat</h1>
-  <p>Suomen opiskelijaravintolat ja ruokalistat</p>
+<!-- Top navigation bar -->
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo-mark" href="#">
+      <div class="logo-box"><span>M</span></div>
+      <span class="logo-text">METROPOLIA</span>
+    </a>
+    <div class="header-divider"></div>
+    <span class="header-title">Opiskelijaravintolat</span>
+  </div>
 </header>
 
-<main>
-  <section>
-    <h2>Hakutoiminnot</h2>
+<!-- Orange hero strip -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <h1>Opiskelijaravintolat</h1>
+    <p>Päivittäiset ja viikottaiset ruokalistat kaikista toimipisteistä</p>
+  </div>
+</div>
 
-    <input id="searchInput" type="search" placeholder="Hae ravintolaa...">
+<main class="layout">
 
-    <select id="cityFilter">
-      <option value="all">Kaikki kaupungit</option>
-    </select>
+  <!-- Demo/offline banner -->
+  <div id="demoBanner" class="demo-banner" role="alert">
+    <strong>ℹ️ Offline-tila</strong> — API on saavutettavissa vain Metropolian verkosta (kampus tai VPN). Näytetään esimerkkidata sovelluksen testaamiseksi.
+  </div>
 
-    <select id="providerFilter">
-      <option value="all">Kaikki tarjoajat</option>
-    </select>
+  <!-- Filters -->
+  <section class="panel controls" aria-label="Hakutoiminnot">
+    <div class="control-group">
+      <label for="searchInput">Hae ravintolaa</label>
+      <input id="searchInput" type="search" placeholder="Nimi, kaupunki, tarjoaja…">
+    </div>
+    <div class="control-group">
+      <label for="cityFilter">Kaupunki</label>
+      <select id="cityFilter"><option value="all">Kaikki kaupungit</option></select>
+    </div>
+    <div class="control-group">
+      <label for="providerFilter">Palveluntarjoaja</label>
+      <select id="providerFilter"><option value="all">Kaikki tarjoajat</option></select>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button id="locateButton" class="btn-locate">📍 Lähin</button>
+    </div>
   </section>
 
-  <section>
-    <h2>Ravintolat</h2>
-    <p id="message">Ladataan ravintoloita...</p>
-    <div id="restaurantList"></div>
-  </section>
-  <section>
-    <h2>Kartta</h2>
+  <!-- Map -->
+  <section class="map-panel panel" aria-label="Kartta">
     <div id="map"></div>
   </section>
-  <section>
-    <h2>Ruokalista</h2>
-    <p id="selectedRestaurantName">Valitse ravintola</p>
 
-    <button id="dailyButton" disabled>Päivän menu</button>
-    <button id="weeklyButton" disabled>Viikon menu</button>
+  <!-- List + Menu -->
+  <div class="content-grid">
 
-    <div id="menuContent"></div>
-  </section>
+    <!-- Restaurant list -->
+    <section class="panel" aria-label="Ravintolalista">
+      <div class="section-header">
+        <h2>Ravintolat</h2>
+        <span id="restaurantCount" class="count-badge">0</span>
+      </div>
+      <div id="restaurantList" class="restaurant-list"></div>
+    </section>
+
+    <!-- Menu -->
+    <section class="panel" aria-label="Ruokalista">
+      <div class="menu-header">
+        <p class="menu-eyebrow">Ruokalista</p>
+        <p id="selectedRestaurantName" class="menu-restaurant-name">Valitse ravintola</p>
+      </div>
+
+      <div class="button-row">
+        <button id="dailyButton"    class="btn-active" disabled>Päivän menu</button>
+        <button id="weeklyButton"   disabled>Viikon menu</button>
+        <button id="favoriteButton" disabled>☆ Suosikki</button>
+      </div>
+
+
+      <div id="message" class="message">Ravintolat ladataan…</div>
+      <div id="menuContent" class="menu-content"></div>
+    </section>
+  </div>
+
 </main>
 
-  <section>
-    <h2>Ruokalista</h2>
-    <p id="selectedRestaurantName">Valitse ravintola</p>
+<footer>
+  <p>TX00EY23 Web-sovelluskehitys &nbsp;·&nbsp; Metropolia Ammattikorkeakoulu &nbsp;·&nbsp; Vanilla JS, no frameworks</p>
+</footer>
 
-    <button id="dailyButton" disabled>Päivän menu</button>
-    <button id="weeklyButton" disabled>Viikon menu</button>
-
-    <div id="menuContent"></div>
-  </section>
-</main>
 </body>
 </html>
