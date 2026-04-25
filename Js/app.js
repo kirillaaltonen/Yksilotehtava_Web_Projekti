@@ -12,12 +12,15 @@ const menuContent = document.querySelector('#menuContent');
 const searchInput = document.querySelector('#searchInput');
 const cityFilter = document.querySelector('#cityFilter');
 const providerFilter = document.querySelector('#providerFilter');
+const locateButton = document.querySelector('#locateButton');
 
 let restaurants = [];
 let selectedRestaurant = null;
 
 let map;
 let markers = [];
+let userMarker = null;
+let nearestRestaurantId = null;
 
 function initMap() {
     map = L.map('map').setView([60.1699, 24.9384], 11);
@@ -31,9 +34,7 @@ async function fetchRestaurants() {
     try {
         const response = await fetch(`${API_URL}/restaurants`);
 
-        if (!response.ok) {
-            throw new Error('Ravintoloiden lataaminen epäonnistui');
-        }
+        if (!response.ok) throw new Error();
 
         restaurants = await response.json();
 
@@ -48,208 +49,172 @@ async function fetchRestaurants() {
     }
 }
 
-function createFilters(restaurantsData) {
-    const cities = [...new Set(restaurantsData.map((restaurant) => restaurant.city).filter(Boolean))];
-    const providers = [...new Set(restaurantsData.map((restaurant) => restaurant.company).filter(Boolean))];
+function createFilters(data) {
+    const cities = [...new Set(data.map(r => r.city).filter(Boolean))];
+    const providers = [...new Set(data.map(r => r.company).filter(Boolean))];
 
-    cities.sort();
-    providers.sort();
-
-    cities.forEach((city) => {
-        const option = document.createElement('option');
-        option.value = city;
-        option.textContent = city;
-        cityFilter.appendChild(option);
+    cities.sort().forEach(city => {
+        cityFilter.innerHTML += `<option value="${city}">${city}</option>`;
     });
 
-    providers.forEach((provider) => {
-        const option = document.createElement('option');
-        option.value = provider;
-        option.textContent = provider;
-        providerFilter.appendChild(option);
+    providers.sort().forEach(p => {
+        providerFilter.innerHTML += `<option value="${p}">${p}</option>`;
     });
 }
 
 function filterRestaurants() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const selectedCity = cityFilter.value;
-    const selectedProvider = providerFilter.value;
+    const term = searchInput.value.toLowerCase();
+    const city = cityFilter.value;
+    const provider = providerFilter.value;
 
-    const filteredRestaurants = restaurants.filter((restaurant) => {
-        const matchesSearch =
-            restaurant.name.toLowerCase().includes(searchTerm) ||
-            (restaurant.address || '').toLowerCase().includes(searchTerm) ||
-            (restaurant.city || '').toLowerCase().includes(searchTerm) ||
-            (restaurant.company || '').toLowerCase().includes(searchTerm);
+    const filtered = restaurants.filter(r => {
+        const matchSearch =
+            r.name.toLowerCase().includes(term) ||
+            (r.address || '').toLowerCase().includes(term) ||
+            (r.city || '').toLowerCase().includes(term) ||
+            (r.company || '').toLowerCase().includes(term);
 
-        const matchesCity = selectedCity === 'all' || restaurant.city === selectedCity;
-        const matchesProvider = selectedProvider === 'all' || restaurant.company === selectedProvider;
+        const matchCity = city === 'all' || r.city === city;
+        const matchProvider = provider === 'all' || r.company === provider;
 
-        return matchesSearch && matchesCity && matchesProvider;
+        return matchSearch && matchCity && matchProvider;
     });
 
-    renderRestaurants(filteredRestaurants);
-    updateMapMarkers(filteredRestaurants);
+    renderRestaurants(filtered);
+    updateMapMarkers(filtered);
 }
 
-function renderRestaurants(restaurantsToRender) {
+function renderRestaurants(data) {
     restaurantList.innerHTML = '';
 
-    if (restaurantsToRender.length === 0) {
-        restaurantList.innerHTML = '<p>Ravintoloita ei löytynyt.</p>';
-        return;
-    }
-
-    restaurantsToRender.forEach((restaurant) => {
+    data.forEach(r => {
         const card = document.createElement('article');
         card.className = 'restaurant-card';
 
+        if (r._id === nearestRestaurantId) {
+            card.classList.add('nearest');
+        }
+
         card.innerHTML = `
-      <h3>${restaurant.name}</h3>
-      <p>${restaurant.address || ''}</p>
-      <p>${restaurant.city || ''}</p>
-      <p>${restaurant.company || ''}</p>
+      ${r._id === nearestRestaurantId ? '<div class="nearest-badge">Nearest</div>' : ''}
+      <h3>${r.name}</h3>
+      <p>${r.city || ''}</p>
     `;
 
-        card.addEventListener('click', () => {
-            selectRestaurant(restaurant);
-        });
+        card.onclick = () => selectRestaurant(r);
 
         restaurantList.appendChild(card);
     });
 }
 
-function selectRestaurant(restaurant) {
-    selectedRestaurant = restaurant;
-    selectedRestaurantName.textContent = restaurant.name;
+function selectRestaurant(r) {
+    selectedRestaurant = r;
+    selectedRestaurantName.textContent = r.name;
     dailyButton.disabled = false;
     weeklyButton.disabled = false;
-    fetchDailyMenu(restaurant._id);
+    fetchDailyMenu(r._id);
 }
 
-function updateMapMarkers(restaurantsToShow) {
-    markers.forEach((marker) => marker.remove());
+function updateMapMarkers(data) {
+    markers.forEach(m => m.remove());
     markers = [];
 
-    restaurantsToShow.forEach((restaurant) => {
-        if (!restaurant.location?.coordinates) return;
+    data.forEach(r => {
+        if (!r.location?.coordinates) return;
 
-        const [longitude, latitude] = restaurant.location.coordinates;
+        const [lon, lat] = r.location.coordinates;
 
-        const marker = L.marker([latitude, longitude])
-            .addTo(map)
-            .bindPopup(`<strong>${restaurant.name}</strong><br>${restaurant.address || ''}`);
+        const marker = L.marker([lat, lon]).addTo(map)
+            .bindPopup(r.name);
 
-        marker.on('click', () => {
-            selectRestaurant(restaurant);
-        });
+        marker.on('click', () => selectRestaurant(r));
 
         markers.push(marker);
     });
 }
 
-async function fetchDailyMenu(restaurantId) {
-    menuContent.innerHTML = '<p>Ladataan päivän ruokalistaa...</p>';
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
 
-    try {
-        const response = await fetch(`${API_URL}/restaurants/daily/${restaurantId}/fi`);
+    const a =
+        Math.sin(dLat/2)**2 +
+        Math.cos(lat1*Math.PI/180) *
+        Math.cos(lat2*Math.PI/180) *
+        Math.sin(dLon/2)**2;
 
-        if (!response.ok) {
-            throw new Error('Ruokalistan lataaminen epäonnistui');
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function findNearest(userLat, userLon) {
+    let min = Infinity;
+    let nearest = null;
+
+    restaurants.forEach(r => {
+        if (!r.location?.coordinates) return;
+
+        const [lon, lat] = r.location.coordinates;
+        const d = getDistance(userLat, userLon, lat, lon);
+
+        if (d < min) {
+            min = d;
+            nearest = r;
         }
-
-        const menu = await response.json();
-        renderDailyMenu(menu);
-    } catch (error) {
-        console.error(error);
-        menuContent.innerHTML = '<p>Päivän ruokalistaa ei voitu ladata.</p>';
-    }
-}
-
-function renderDailyMenu(menu) {
-    menuContent.innerHTML = '';
-
-    if (!menu.courses || menu.courses.length === 0) {
-        menuContent.innerHTML = '<p>Ruokalistaa ei ole saatavilla tälle päivälle.</p>';
-        return;
-    }
-
-    menu.courses.forEach((course) => {
-        const meal = document.createElement('div');
-        meal.className = 'meal';
-
-        meal.innerHTML = `
-      <h3>${course.name || 'Ei nimeä'}</h3>
-      <p>${course.price || ''}</p>
-      <p>${course.diets || ''}</p>
-    `;
-
-        menuContent.appendChild(meal);
     });
-}
 
-async function fetchWeeklyMenu(restaurantId) {
-    menuContent.innerHTML = '<p>Ladataan viikon ruokalistaa...</p>';
-
-    try {
-        const response = await fetch(`${API_URL}/restaurants/weekly/${restaurantId}/fi`);
-
-        if (!response.ok) {
-            throw new Error('Viikon ruokalistan lataaminen epäonnistui');
-        }
-
-        const weeklyMenu = await response.json();
-        renderWeeklyMenu(weeklyMenu);
-    } catch (error) {
-        console.error(error);
-        menuContent.innerHTML = '<p>Viikon ruokalistaa ei voitu ladata.</p>';
+    if (nearest) {
+        nearestRestaurantId = nearest._id;
+        renderRestaurants(restaurants);
+        map.setView([userLat, userLon], 13);
     }
 }
 
-function renderWeeklyMenu(weeklyMenu) {
-    menuContent.innerHTML = '';
+locateButton.addEventListener('click', () => {
+    if (!navigator.geolocation) return;
 
-    if (!weeklyMenu.days || weeklyMenu.days.length === 0) {
-        menuContent.innerHTML = '<p>Viikon ruokalistaa ei ole saatavilla.</p>';
-        return;
-    }
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const {latitude, longitude} = pos.coords;
 
-    weeklyMenu.days.forEach((day) => {
-        const dayElement = document.createElement('section');
-        dayElement.className = 'menu-day';
+        if (userMarker) userMarker.remove();
 
-        const coursesHtml = day.courses.map((course) => `
-      <div class="meal">
-        <h3>${course.name || 'Ei nimeä'}</h3>
-        <p>${course.price || ''}</p>
-        <p>${course.diets || ''}</p>
-      </div>
-    `).join('');
+        userMarker = L.marker([latitude, longitude]).addTo(map)
+            .bindPopup('You are here')
+            .openPopup();
 
-        dayElement.innerHTML = `
-      <h3>${day.date}</h3>
-      ${coursesHtml}
-    `;
-
-        menuContent.appendChild(dayElement);
+        findNearest(latitude, longitude);
     });
-}
-
-searchInput.addEventListener('input', filterRestaurants);
-cityFilter.addEventListener('change', filterRestaurants);
-providerFilter.addEventListener('change', filterRestaurants);
-
-dailyButton.addEventListener('click', () => {
-    if (selectedRestaurant) {
-        fetchDailyMenu(selectedRestaurant._id);
-    }
 });
 
-weeklyButton.addEventListener('click', () => {
-    if (selectedRestaurant) {
-        fetchWeeklyMenu(selectedRestaurant._id);
-    }
-});
+async function fetchDailyMenu(id) {
+    menuContent.innerHTML = 'Loading...';
+    const res = await fetch(`${API_URL}/restaurants/daily/${id}/fi`);
+    const data = await res.json();
+
+    menuContent.innerHTML = data.courses.map(c =>
+        `<div class="meal">${c.name}</div>`
+    ).join('');
+}
+
+async function fetchWeeklyMenu(id) {
+    menuContent.innerHTML = 'Loading...';
+    const res = await fetch(`${API_URL}/restaurants/weekly/${id}/fi`);
+    const data = await res.json();
+
+    menuContent.innerHTML = data.days.map(d =>
+        `<div class="menu-day">
+      <h3>${d.date}</h3>
+      ${d.courses.map(c => `<div class="meal">${c.name}</div>`).join('')}
+    </div>`
+    ).join('');
+}
+
+dailyButton.onclick = () => fetchDailyMenu(selectedRestaurant._id);
+weeklyButton.onclick = () => fetchWeeklyMenu(selectedRestaurant._id);
+
+searchInput.oninput = filterRestaurants;
+cityFilter.onchange = filterRestaurants;
+providerFilter.onchange = filterRestaurants;
 
 initMap();
 fetchRestaurants();
