@@ -1,4 +1,4 @@
-# Opiskelijaravintolat – TX00EY23
+# Opiskelijaravintolat
 
 Vanilla JavaScript web application for browsing Finnish student restaurants and their daily or weekly menus.
 
